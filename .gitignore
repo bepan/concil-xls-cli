@@ -1,0 +1,6 @@
+# Excel files
+*.xlsx
+*.xlsb
+
+# Dependecies
+node_modules/
