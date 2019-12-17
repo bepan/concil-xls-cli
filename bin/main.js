@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const XLSX = require('xlsx');
 const path = require('path');
 const _ = require('lodash');
