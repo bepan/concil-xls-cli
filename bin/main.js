@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-
 const XLSX = require('xlsx');
 const path = require('path');
 const _ = require('lodash');
 const os = require('os');
 const fs = require('fs');
 const yargs = require("yargs");
+const FileNameValidator = require('./modules/file-name.validator');
+const StartFromValidator = require('./modules/start-from.validator');
 
 // Build the user's desktop path
 const desktopPath = path.join(os.homedir(), 'Desktop');
@@ -17,30 +18,9 @@ const options = yargs
   .option("sf",  { alias: "startFrom", describe: "Which Cell to start reading data from.", type: "string", demandOption: true })
   .argv;
 
-// Check if the provided file exists in Desktop
-if ( !fs.existsSync(path.join(desktopPath, options.fileName)) ) 
-{
-  console.error('The provided file is not placed in your Desktop.');
-  process.exit(1);
-}
-
-if (options.startFrom.trim() === '')
-{
-  console.error('The cell value should not be empty.');
-  process.exit(1);
-}
-
-if ( !/[A-Za-z]/.test(options.startFrom[0]) )
-{
-  console.error('The first character of provided cell is not a letter.');
-  process.exit(1);
-}
-
-if ( !/^\d+$/.test(options.startFrom.substr(1)) )
-{
-  console.error('The cell value after the first letter must be a number.');
-  process.exit(1);
-}
+// Run Argument Validations
+FileNameValidator.run(options.fileName, desktopPath);
+StartFromValidator.run(options.startFrom);
 
 // Read Concil file
 var startEx = new Date();
