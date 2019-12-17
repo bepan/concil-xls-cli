@@ -11,7 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "lodash": "^4.17.15",
-    "xlsx": "^0.15.3"
+    "xlsx": "^0.15.3",
+    "yargs": "^13.2.4"
   },
   "bin": {
     "concil": "./bin/main.js"

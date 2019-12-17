@@ -4,13 +4,47 @@ const XLSX = require('xlsx');
 const path = require('path');
 const _ = require('lodash');
 const os = require('os');
-var fs = require('fs');
+const fs = require('fs');
+const yargs = require("yargs");
 
-var startEx = new Date();
+// Build the user's desktop path
 const desktopPath = path.join(os.homedir(), 'Desktop');
 
+// Configure cli options
+const options = yargs
+  .usage('Basic Usage: concil --fn=example.xlsx --sf=A2')
+  .option("fn", { alias: "fileName", describe: "Excel to feed the app.", type: "string", demandOption: true })
+  .option("sf",  { alias: "startFrom", describe: "Which Cell to start reading data from.", type: "string", demandOption: true })
+  .argv;
+
+// Check if the provided file exists in Desktop
+if ( !fs.existsSync(path.join(desktopPath, options.fileName)) ) 
+{
+  console.error('The provided file is not placed in your Desktop.');
+  process.exit(1);
+}
+
+if (options.startFrom.trim() === '')
+{
+  console.error('The cell value should not be empty.');
+  process.exit(1);
+}
+
+if ( !/[A-Za-z]/.test(options.startFrom[0]) )
+{
+  console.error('The first character of provided cell is not a letter.');
+  process.exit(1);
+}
+
+if ( !/^\d+$/.test(options.startFrom.substr(1)) )
+{
+  console.error('The cell value after the first letter must be a number.');
+  process.exit(1);
+}
+
 // Read Concil file
-const filePath = path.join(desktopPath, 'Cuentas y Aux Nov 2019.xlsx');
+var startEx = new Date();
+const filePath = path.join(desktopPath, options.fileName);
 const workbook = XLSX.readFile(filePath);
 
 // Create root output directory in Users Desktop
@@ -18,7 +52,7 @@ const rootDir = path.join(desktopPath, `conciliacion_${new Date().getTime()}`);
 fs.mkdirSync(rootDir);
 
 // Loop through all worksheets (Cuentas)
-for (let sheetName of workbook.SheetNames) 
+for (let sheetName of workbook.SheetNames)
 {
   // Create directory for each account
   fs.mkdirSync(path.join(rootDir, sheetName));
@@ -26,8 +60,8 @@ for (let sheetName of workbook.SheetNames)
 
   // Set the range which the database starts at
   var range = XLSX.utils.decode_range(ws['!ref']);
-  range.s.c = 0; // 0 == XLSX.utils.decode_col("A")
-  range.s.r = 1;
+  range.s.c = XLSX.utils.decode_col( options.sf[0].toUpperCase() );
+  range.s.r = XLSX.utils.decode_row( options.sf.substr(1) );
   // range.e.c = 6; // 6 == XLSX.utils.decode_col("G")
   // range.e.c = 6;
   var new_range = XLSX.utils.encode_range(range);
