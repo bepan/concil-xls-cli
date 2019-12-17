@@ -1,8 +1,8 @@
 const XLSX = require('xlsx');
 const path = require('path');
-var _ = require('lodash');
+const _ = require('lodash');
+const os = require('os');
 
-var startEx = new Date();
 // Read Concil file
 const filePath = path.join(__dirname, 'Cuentas y Aux Nov 2019.xlsx');
 const workbook = XLSX.readFile(filePath);
@@ -25,10 +25,11 @@ var grouped = _.groupBy(concilData, 'Aux');
 const groupedKeys = Object.keys(grouped);
 concilData = [];
 
-const matchesArr = [];
-const pendingRegs = [];
-const processedMap = new Map();
+let matchesArr = [];
+let pendingRegs = [];
+const processedMap = new WeakMap();
 
+var startEx = new Date();
 for (let aux of groupedKeys)
 {
   let oldConcept = '', iterStart = 0;
@@ -66,18 +67,21 @@ for (let aux of groupedKeys)
   }
 
   delete grouped[aux];
-  processedMap.clear();
+
+  // Create a new excel file per aux
+  var newWb = XLSX.utils.book_new();
+  var newWsPending = XLSX.utils.json_to_sheet(pendingRegs);
+  var newWsDeleted = XLSX.utils.json_to_sheet(matchesArr);
+
+  XLSX.utils.book_append_sheet(newWb, newWsPending, "Pendientes");
+  XLSX.utils.book_append_sheet(newWb, newWsDeleted, "Eliminados");
+  XLSX.writeFile(newWb, `excels/${firstSheetName}_${aux}.xlsx`);
+  pendingRegs = [];
+  matchesArr = []
 }
 
 var endEx = new Date() - startEx;
 console.info('Execution time: %dms', endEx);
 
-// Write to a new book
-var newWb = XLSX.utils.book_new();
-var newWsPending = XLSX.utils.json_to_sheet(pendingRegs);
-var newWsDeleted = XLSX.utils.json_to_sheet(matchesArr);
 
-XLSX.utils.book_append_sheet(newWb, newWsPending, "Pendientes");
-XLSX.utils.book_append_sheet(newWb, newWsDeleted, "Eliminados");
-XLSX.writeFile(newWb, 'output.xlsx');
 
