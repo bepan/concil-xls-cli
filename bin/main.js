@@ -19,7 +19,7 @@ const desktopPath = path.join(os.homedir(), 'Desktop');
 
 // Configure cli options
 const options = buildOptions();
-const { fileName, startFromCell } = options;
+const { fileName, startFromCell, month, year } = options;
 
 // Run Argument Validations
 FileNameValidator.run(fileName, desktopPath);
@@ -58,7 +58,7 @@ for (let sheetName of workbook.SheetNames)
     var newWsDeleted = XLSX.utils.json_to_sheet(matchesArr);
     XLSX.utils.book_append_sheet(newWb, newWsPending, "Pendientes");
     XLSX.utils.book_append_sheet(newWb, newWsDeleted, "Eliminados");
-    XLSX.writeFile(newWb, path.join(rootDirFullPath, sheetName, `${sheetName}_${aux}.xlsx`));
+    XLSX.writeFile(newWb, path.join(rootDirFullPath, sheetName, `${sheetName}_${aux}_${month}_${year}.xlsx`));
   }
 }
 
