@@ -2,19 +2,24 @@
   "name": "concil-xls-app",
   "version": "1.0.0",
   "description": "",
-  "main": "bin/main.js",
+  "main": "electron-app/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron ."
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bootstrap": "^4.4.1",
     "lodash": "^4.17.15",
+    "vue": "^2.6.11",
     "xlsx": "^0.15.3",
     "yargs": "^13.2.4"
   },
   "bin": {
     "concil": "./bin/main.js"
+  },
+  "devDependencies": {
+    "electron": "^7.1.6"
   }
 }

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Conciliador</title>
+    <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.min.css" />
+  </head>
+  <body>
+    <!-- Main app -->
+    <div id="app" class="container-fluid">
+
+      <form @submit="onSubmit($event)">
+        <!-- Archivo Base -->
+        <div class="form-group">
+          <label for="customFile">Archivo Base</label>
+          <div class="custom-file">
+            <input @change="setLabelWithFileName()" type="file" class="custom-file-input" id="customFile">
+            <label class="custom-file-label" for="customFile">Choose file</label>
+          </div>
+        </div>
+
+        <!-- Mes y Anio -->
+        <div class="form-row">
+          <div class="form-group col">
+            <label for="inputEmail4">Mes</label>
+            <input type="email" class="form-control" id="inputEmail4">
+          </div>
+          <div class="form-group col">
+            <label for="inputEmail4">Año</label>
+            <input type="email" class="form-control" id="inputEmail4">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="customFile">Enviar resultado a:</label>
+          <div class="custom-file">
+            <input @click="setLabelWithPathName($event)" type="file" class="custom-file-input" id="output-path">
+            <label class="custom-file-label" id="output-path-label" for="output-path">Choose file</label>
+          </div>
+        </div>
+
+        <!-- Submit button -->
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+
+    </div>
+
+    <script type="module">
+      const { remote } = require('electron');
+      import Vue from '../node_modules/vue/dist/vue.esm.browser.js';
+
+      var app = new Vue({
+        el: '#app',
+        data: {
+          message: 'Hello Vue!'
+        },
+        methods: {
+          setLabelWithFileName: function() {
+            const fileNode = document.querySelector('#customFile');
+            fileNode.nextElementSibling.textContent = fileNode.files[0].name;
+          },
+
+          setLabelWithPathName: function(e) {
+            e.preventDefault();
+            const outputPathLabel = document.querySelector('#output-path-label');
+            const pathArray = remote.dialog.showOpenDialog({properties: ['openDirectory']});
+            pathArray.then(res => {
+              if (res.filePaths.length) {
+                outputPathLabel.textContent = res.filePaths[0]
+              }
+            });
+          },
+
+          getFolderPath: function() {
+            const fileNode = document.querySelector('#custom-folder');
+            console.log(fileNode.files);          },
+
+          onSubmit(e) {
+            e.preventDefault();
+            console.log('form submitted!');
+            const pathArray = remote.dialog.showOpenDialog({properties: ['openDirectory']});
+            pathArray.then(res => console.log(res.filePaths))
+          }
+        }
+      });
+
+    </script>
+  </body>
+</html>
