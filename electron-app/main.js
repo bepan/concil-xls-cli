@@ -1,10 +1,12 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const url = require('url');
 const path = require('path');
+const workerpool = require('workerpool');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let win
+let win;
+var pool = workerpool.pool(path.join(__dirname, '../src/main.js'));
 
 function createMainWindow () {
   // Create the browser window.
@@ -60,3 +62,25 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+ipcMain.on('conciliate', function(e, args) {
+
+  const moldedArgs = {
+    file: args.baseFile,
+    startFromCell: args.startFromCell,
+    month: args.selectedMonth,
+    year: args.selectedYear,
+    outDir: args.outDir
+  };
+
+  // Run in a separate thread so it does not block the gui.
+  pool.exec('conciliate', [moldedArgs])
+    .then(function (result) {
+      console.log('finish');
+    })
+    .catch(function (err) {
+      console.error(err);
+    })
+    .then(function () {
+      pool.terminate(); // terminate all workers when done
+    });
+});

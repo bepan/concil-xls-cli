@@ -6,28 +6,24 @@ module.exports = function() {
     .usage('Usage with spaces in file name: concil --fn="example 2019.xlsx" --sfc=A2')
     // Options
     .option("f", { 
-      alias: "fileName", 
-      describe: "Excel to feed the app.", 
-      type: "string", 
-      demandOption: true 
+      alias: "file", type: "string", demandOption: true,
+      describe: "Full path Excel file to feed the app.", 
     })
     .option("st", {
-      alias: "startFromCell", 
+      alias: "startFromCell", type: "string", demandOption: true,
       describe: "Which Cell to start reading data from.",
-      type: "string",
-      demandOption: true
     })
     .option("m", {
-      alias: "month", 
+      alias: "month", type: "string", demandOption: true,
       describe: "Month that will be part of the output files.",
-      type: "string",
-      demandOption: true
     })
     .option("y", {
-      alias: "year", 
+      alias: "year", type: "string", demandOption: true,
       describe: "Year that will be part of the output files.",
-      type: "string",
-      demandOption: true
+    })
+    .option("o", {
+      alias: "outDir", type: "string", demandOption: true,
+      describe: "Output folder to put the results.",
     })
     .argv;
 }

@@ -16,72 +16,111 @@
         <div class="form-group">
           <label for="customFile">Archivo Base</label>
           <div class="custom-file">
-            <input @change="setLabelWithFileName()" type="file" class="custom-file-input" id="customFile">
-            <label class="custom-file-label" for="customFile">Choose file</label>
+            <input @change="setBaseFileLabel()" type="file" class="custom-file-input" id="base-file">
+            <label class="custom-file-label" for="base-file">
+              {{form.baseFile || 'Selecciona un archivo'}}
+            </label>
           </div>
         </div>
 
-        <!-- Mes y Anio -->
         <div class="form-row">
+          <!-- Start from Cell -->
+          <div class="form-group col">
+            <label for="start-from-cell">Celda Inicial de Registros</label>
+            <input v-model="form.startFromCell" class="form-control" id="start-from-cell" placeholder="Ej. a2">
+          </div>
+          <!-- Mes -->
           <div class="form-group col">
             <label for="inputEmail4">Mes</label>
-            <input type="email" class="form-control" id="inputEmail4">
+            <select class="custom-select" v-model="form.selectedMonth">
+              <option value="">Selecciona un Mes</option>
+              <option value="Ene">Enero</option>
+              <option value="Feb">Febrero</option>
+              <option value="Mar">Marzo</option>
+              <option value="Abr">Abril</option>
+              <option value="May">Mayo</option>
+              <option value="Jun">Junio</option>
+              <option value="Jul">Julio</option>
+              <option value="Ago">Agosto</option>
+              <option value="Sep">Septiembre</option>
+              <option value="Oct">Octubre</option>
+              <option value="Nov">Noviembre</option>
+              <option value="Dic">Diciembre</option>
+            </select>
           </div>
+          <!-- Anio -->
           <div class="form-group col">
             <label for="inputEmail4">Año</label>
-            <input type="email" class="form-control" id="inputEmail4">
+            <input v-model="form.selectedYear" class="form-control" id="inputEmail4" maxlength="4" placeholder="Ej. 2019">
           </div>
         </div>
 
+        <!-- Carpeta Destino -->
         <div class="form-group">
           <label for="customFile">Enviar resultado a:</label>
           <div class="custom-file">
-            <input @click="setLabelWithPathName($event)" type="file" class="custom-file-input" id="output-path">
-            <label class="custom-file-label" id="output-path-label" for="output-path">Choose file</label>
+            <input @click="setOutDirLabel($event)" type="file" class="custom-file-input" id="out-dir">
+            <label class="custom-file-label" id="output-path-label" for="out-dir">
+              {{form.outDir || 'Selecciona un folder'}}
+            </label>
           </div>
         </div>
 
         <!-- Submit button -->
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <button @click="cleanFields()" type="button" class="btn btn-secondary">Limpiar</button>
+        <button :disabled="atLeastOneEmptyValue()" type="submit" class="btn btn-primary">Generar Archivos</button>
       </form>
-
     </div>
 
     <script type="module">
-      const { remote } = require('electron');
+      const { remote, ipcRenderer } = require('electron');
       import Vue from '../node_modules/vue/dist/vue.esm.browser.js';
 
       var app = new Vue({
         el: '#app',
         data: {
-          message: 'Hello Vue!'
+          form: {
+            baseFile: '',
+            startFromCell: '',
+            outDir: '',
+            selectedMonth: '',
+            selectedYear: ''
+          }
         },
         methods: {
-          setLabelWithFileName: function() {
-            const fileNode = document.querySelector('#customFile');
-            fileNode.nextElementSibling.textContent = fileNode.files[0].name;
+          setBaseFileLabel: function() {
+            const baseFileInput = document.querySelector('#base-file');
+            this.form.baseFile = baseFileInput.files[0].path;
           },
 
-          setLabelWithPathName: function(e) {
+          setOutDirLabel: function(e) {
             e.preventDefault();
-            const outputPathLabel = document.querySelector('#output-path-label');
             const pathArray = remote.dialog.showOpenDialog({properties: ['openDirectory']});
             pathArray.then(res => {
               if (res.filePaths.length) {
-                outputPathLabel.textContent = res.filePaths[0]
+                this.form.outDir = res.filePaths[0];
               }
             });
           },
 
-          getFolderPath: function() {
-            const fileNode = document.querySelector('#custom-folder');
-            console.log(fileNode.files);          },
-
           onSubmit(e) {
             e.preventDefault();
-            console.log('form submitted!');
-            const pathArray = remote.dialog.showOpenDialog({properties: ['openDirectory']});
-            pathArray.then(res => console.log(res.filePaths))
+            ipcRenderer.send('conciliate', this.form);
+          },
+
+          atLeastOneEmptyValue() {
+            for (const key of Object.keys(this.form)) {
+              if (this.form[key].trim() === '') {
+                return true;
+              }
+            }
+            return false;
+          },
+
+          cleanFields() {
+            for (const key of Object.keys(this.form)) {
+              this.form[key] = '';
+            }
           }
         }
       });
