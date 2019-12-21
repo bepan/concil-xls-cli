@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 var workerpool = require('workerpool');
 
 const XLSX = require('xlsx');

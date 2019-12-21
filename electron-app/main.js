@@ -29,6 +29,9 @@ function createMainWindow () {
   // Open the DevTools.
   // win.webContents.openDevTools()
 
+  // Remove default menu
+  win.removeMenu();
+
   // Emitted when the window is closed.
   win.on('closed', () => {
     // Dereference the window object, usually you would store windows
