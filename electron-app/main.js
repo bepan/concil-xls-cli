@@ -17,14 +17,14 @@ function createMainWindow () {
       nodeIntegration: true,
       // devTools: false
     }
-  })
+  });
 
   // and load the index.html of the app.
   win.loadURL(url.format({
     pathname: path.join(__dirname, 'index.html'),
     protocol: 'file',
     slashes: true
-  }))
+  }));
 
   // Open the DevTools.
   // win.webContents.openDevTools()
@@ -37,6 +37,7 @@ function createMainWindow () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
+    pool.terminate();
     win = null
   })
 }
@@ -59,31 +60,29 @@ app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (win === null) {
-    createWindow()
+    createMainWindow()
   }
 })
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
-ipcMain.on('conciliate', function(e, args) {
-
-  const moldedArgs = {
-    file: args.baseFile,
-    startFromCell: args.startFromCell,
-    month: args.selectedMonth,
-    year: args.selectedYear,
-    outDir: args.outDir
-  };
+ipcMain.on('conciliate:start', function(e, args) {
+  const {baseFile, startFromCell, selectedMonth, selectedYear, outDir} = args;
 
   // Run in a separate thread so it does not block the gui.
-  pool.exec('conciliate', [moldedArgs])
-    .then(function (result) {
-      console.log('finish');
+  pool.exec('conciliate', [baseFile, startFromCell, selectedMonth, selectedYear, outDir])
+    .then(function (exTime) {
+      win.webContents.send('conciliate:end', {
+        success: true,
+        message: 'Los archivos fueron generados exitosamente.',
+        exTime 
+      });
     })
     .catch(function (err) {
-      console.error(err);
-    })
-    .then(function () {
-      pool.terminate(); // terminate all workers when done
+      console.error();
+      win.webContents.send('conciliate:end', {
+        success: false,
+        message: err.message
+      });
     });
 });

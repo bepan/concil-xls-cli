@@ -1,11 +1,11 @@
-const _ = require('lodash');
+const sortBy = require('lodash/sortBy');
 
 module.exports = function(dataBlock) {
 
   const processedMap = new WeakMap();
   const matchesArr = [], pendingRegs = [];
   let oldConcept = '', iterStart = 0;
-  dataBlock = _.sortBy(dataBlock, ['Concepto']);
+  dataBlock = sortBy(dataBlock, ['Concepto']);
 
   for (let i = 0; i < dataBlock.length; i++) 
   {

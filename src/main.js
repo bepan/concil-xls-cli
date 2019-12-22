@@ -2,16 +2,14 @@ var workerpool = require('workerpool');
 
 const XLSX = require('xlsx');
 const path = require('path');
-const _ = require('lodash');
+const groupBy = require('lodash/groupBy');
 const fs = require('fs');
 const FileNameValidator = require('./modules/file-name.validator');
 const StartFromValidator = require('./modules/start-from.validator');
 const getExcelData = require('./modules/get-excel-data.helper');
 const conciliate = require('./modules/conciliate-logic.module');
 
-function conciliateLogic({file, startFromCell, month, year, outDir}) {
-
-  console.log('start generating files...');
+function conciliateLogic(file, startFromCell, month, year, outDir) {
   
   // Take start execution time.
   const startEx = new Date();
@@ -36,11 +34,9 @@ function conciliateLogic({file, startFromCell, month, year, outDir}) {
     // Get Worksheet
     const ws = workbook.Sheets[account];
     // Group the data rows by Aux
-    const grouped = _.groupBy(getExcelData(ws, startFromCell), 'Aux');
-    // Get all keys (Auxiliaries)
-    const auxiliaries = Object.keys(grouped);
+    const grouped = groupBy(getExcelData(ws, startFromCell), 'Aux');
 
-    for (let aux of auxiliaries)
+    for (let aux of Object.keys(grouped))
     {
       // Run conciliate routine per aux block
       const { matchesArr, pendingRegs } = conciliate(grouped[aux]);
@@ -59,6 +55,7 @@ function conciliateLogic({file, startFromCell, month, year, outDir}) {
   // Calculate Execution time
   var endEx = new Date() - startEx;
   console.info('Execution time: %dms', endEx);
+  return endEx;
 };
 
 // create a worker and register public functions

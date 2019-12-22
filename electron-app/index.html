@@ -68,8 +68,21 @@
 
         <!-- Submit button -->
         <button @click="cleanFields()" type="button" class="btn btn-secondary">Limpiar</button>
-        <button :disabled="atLeastOneEmptyValue()" type="submit" class="btn btn-primary">Generar Archivos</button>
+        <button :disabled="atLeastOneEmptyValue() || processing" type="submit" class="btn btn-primary">
+          Generar Archivos
+          <span v-show="processing" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        </button>
       </form>
+      <div style="height: 1rem;"></div>
+
+      <!-- Success/Error message -->
+      <div v-show="endResultMessage">
+        <div v-bind:class="[wasSuccess ? 'text-success' : 'text-danger']">
+          {{endResultMessage}}
+        </div>
+        <div v-show="exTime">Tomó {{ exTime/1000 }} segundos.</div>
+      </div>
+
     </div>
 
     <script type="module">
@@ -79,6 +92,10 @@
       var app = new Vue({
         el: '#app',
         data: {
+          processing: false,
+          exTime: 0,
+          endResultMessage: '',
+          wasSuccess: true,
           form: {
             baseFile: '',
             startFromCell: '',
@@ -87,10 +104,12 @@
             selectedYear: ''
           }
         },
+        mounted: function() {
+          this.baseFileInput = document.querySelector('#base-file');
+        },
         methods: {
           setBaseFileLabel: function() {
-            const baseFileInput = document.querySelector('#base-file');
-            this.form.baseFile = baseFileInput.files[0].path;
+            this.form.baseFile = this.baseFileInput.files[0].path;
           },
 
           setOutDirLabel: function(e) {
@@ -105,7 +124,9 @@
 
           onSubmit(e) {
             e.preventDefault();
-            ipcRenderer.send('conciliate', this.form);
+            this.endResultMessage = ''; 
+            this.processing = true;
+            ipcRenderer.send('conciliate:start', this.form);
           },
 
           atLeastOneEmptyValue() {
@@ -118,11 +139,20 @@
           },
 
           cleanFields() {
+            this.baseFileInput.value = '';
             for (const key of Object.keys(this.form)) {
               this.form[key] = '';
             }
           }
         }
+      });
+
+      ipcRenderer.on('conciliate:end', function(e, res) {
+        app.cleanFields();
+        app.wasSuccess = res.success;
+        app.exTime = res.success ? res.exTime : 0;
+        app.endResultMessage = res.message;
+        app.processing = false;
       });
 
     </script>
