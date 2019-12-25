@@ -1,67 +1,93 @@
-var workerpool = require('workerpool');
-
-const XLSX = require('xlsx');
+// const XLSX = require('xlsx');
+// const { SheetJsService } = require('./services/sheet-js.service');
+const ExcelJS = require('exceljs');
+const { ExcelJsService } = require('./services/excel-js.service');
 const path = require('path');
 const groupBy = require('lodash/groupBy');
 const fs = require('fs');
-const FileNameValidator = require('./modules/file-name.validator');
-const StartFromValidator = require('./modules/start-from.validator');
-const getExcelData = require('./modules/get-excel-data.helper');
-const conciliate = require('./modules/conciliate-logic.module');
+const FileNameValidator = require('./validators/file-name.validator');
+const StartFromValidator = require('./validators/start-from.validator');
+const chargePaymentConcil = require('./modules/conciliate-logic.module');
+// const workerpool = require('workerpool');
 
 function conciliateLogic(file, startFromCell, month, year, outDir) {
-  
-  // Take start execution time.
-  const startEx = new Date();
+  return new Promise(function(resolve, reject) {
+    // Create objects
+    // const excel = new SheetJsService(XLSX);
+    const excel = new ExcelJsService(ExcelJS);
 
-  // Run Argument Validations
-  FileNameValidator.run(file);
-  StartFromValidator.run(startFromCell);
+    // Take start execution time.
+    const startEx = new Date();
 
-  // Read Excel file
-  const workbook = XLSX.readFile(file);
-
-  // Create output root directory in Desktop
-  const rootDirName = `concil_${month}_${year}__${new Date().getTime()}`;
-  const rootDirFullPath = path.join(outDir, rootDirName);
-  fs.mkdirSync(rootDirFullPath);
-
-  // Loop through all Accounts
-  for (let account of workbook.SheetNames)
-  {
-    // Create directory for each account
-    fs.mkdirSync(path.join(rootDirFullPath, account));
-    // Get Worksheet
-    const ws = workbook.Sheets[account];
-    // Group the data rows by Aux
-    const grouped = groupBy(getExcelData(ws, startFromCell), 'Aux');
-
-    for (let aux of Object.keys(grouped))
-    {
-      // Run conciliate routine per aux block
-      const { matchesArr, pendingRegs } = conciliate(grouped[aux]);
-      // Remove block from memory
-      delete grouped[aux];
-      // Create new excel per aux
-      var newWb = XLSX.utils.book_new();
-      var newWsPending = XLSX.utils.json_to_sheet(pendingRegs);
-      var newWsDeleted = XLSX.utils.json_to_sheet(matchesArr);
-      XLSX.utils.book_append_sheet(newWb, newWsPending, "Pendientes");
-      XLSX.utils.book_append_sheet(newWb, newWsDeleted, "Eliminados");
-      XLSX.writeFile(newWb, path.join(rootDirFullPath, account, `${account}_${aux}_${month}_${year}.xlsx`));
+    // Run Argument Validations
+    try {
+      FileNameValidator.run(file);
+      StartFromValidator.run(startFromCell);
+    } catch (error) {
+      reject({message: error.message});
+      return;
     }
-  }
 
-  // Calculate Execution time
-  var endEx = new Date() - startEx;
-  console.info('Execution time: %dms', endEx);
-  return endEx;
+    // Read Excel file
+    excel.read(file, function(err) {
+      console.log('finish reading file...');
+      // Catch read error
+      if (err) {
+        reject({message: 'There was a problem reading the input file, try again.'});
+        return;
+      }
+
+      // Create output root directory in destination folder
+      const rootDirName = `concil_${month}_${year}__${new Date().getTime()}`;
+      const rootDirFullPath = path.join(outDir, rootDirName);
+      fs.mkdirSync(rootDirFullPath);
+
+      // Loop through all Accounts
+      const sheetNames = excel.getAllWorksheetNames();
+      for (let account of sheetNames)
+      {
+        // Create directory for each account
+        fs.mkdirSync(path.join(rootDirFullPath, account));
+
+        // Group the data rows by Aux
+        const grouped = groupBy(excel.getDataset(account, startFromCell), 'Aux');
+
+        // Loop through all auxiliars
+        for (let aux of Object.keys(grouped))
+        {
+          // Run conciliate routine per aux block
+          const { matchesArr, pendingRegs } = chargePaymentConcil(grouped[aux]);
+
+          // Remove block from memory
+          delete grouped[aux];
+
+          // Create new excel per aux
+          const newFile = path.join(rootDirFullPath, account, `${account}_${aux}_${month}_${year}.xlsx`);
+          var newWorkbook = excel.createNewWorkbook(newFile);
+          excel.jsonToSheet(newWorkbook, pendingRegs, "Pendientes");
+          excel.jsonToSheet(newWorkbook, matchesArr, "Eliminados");
+          excel.write(newWorkbook, function(err) {
+            if (err) {
+              reject({message: 'There was a problem creating one file, try again.'});
+              return;
+            }
+          });
+        }
+      }
+
+      // Return Execution time
+      resolve(new Date() - startEx);
+    });
+
+  });
 };
 
 // create a worker and register public functions
-workerpool.worker({
-  conciliate: conciliateLogic
-});
+// workerpool.worker({
+//   conciliate: conciliateLogic
+// });
+
+module.exports = conciliateLogic;
 
 
 

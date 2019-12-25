@@ -7,20 +7,17 @@ class StartFromValidator
   {
     if (startFrom.trim() === '')
     {
-      console.error('The cell value should not be empty.');
-      process.exit(1);
+      throw new Error('La Celda Inicial no puede estar vacia.');
     }
     
     if ( !/[A-Za-z]/.test(startFrom[0]) )
     {
-      console.error('The first character of provided cell is not a letter.');
-      process.exit(1);
+      throw new Error('El primer caracter de la Celda Inicial debe ser una letra.');
     }
     
     if ( !/^\d+$/.test(startFrom.substr(1)) )
     {
-      console.error('The cell value after the first letter must be a number.');
-      process.exit(1);
+      throw new Error('El contenido, de la Celda Inicial, despues del primer caracter debe ser un numero.');
     }
   }
 }

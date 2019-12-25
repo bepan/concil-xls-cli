@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "bootstrap": "^4.4.1",
+    "exceljs": "^3.5.0",
     "lodash": "^4.17.15",
     "vue": "^2.6.11",
     "workerpool": "^5.0.2",

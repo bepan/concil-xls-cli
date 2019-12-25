@@ -148,9 +148,8 @@
       });
 
       ipcRenderer.on('conciliate:end', function(e, res) {
-        app.cleanFields();
         app.wasSuccess = res.success;
-        app.exTime = res.success ? res.exTime : 0;
+        app.exTime = res.exTime;
         app.endResultMessage = res.message;
         app.processing = false;
       });

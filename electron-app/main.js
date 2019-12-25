@@ -1,12 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const url = require('url');
 const path = require('path');
-const workerpool = require('workerpool');
+// const workerpool = require('workerpool');
+const concil = require('../src/main');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
-var pool = workerpool.pool(path.join(__dirname, '../src/main.js'));
+// var pool = workerpool.pool(path.join(__dirname, '../src/main.js'));
 
 function createMainWindow () {
   // Create the browser window.
@@ -68,8 +69,7 @@ app.on('activate', () => {
 ipcMain.on('conciliate:start', function(e, args) {
   const {baseFile, startFromCell, selectedMonth, selectedYear, outDir} = args;
 
-  // Run in a separate thread so it does not block the gui.
-  pool.exec('conciliate', [baseFile, startFromCell, selectedMonth, selectedYear, outDir])
+  concil(baseFile, startFromCell, selectedMonth, selectedYear, outDir)
     .then(function (exTime) {
       win.webContents.send('conciliate:end', {
         success: true,
@@ -78,13 +78,28 @@ ipcMain.on('conciliate:start', function(e, args) {
       });
     })
     .catch(function (err) {
-      console.error();
       win.webContents.send('conciliate:end', {
         success: false,
         message: err.message
       });
-    })
-    .then(function () {
-      pool.terminate(); // terminate all workers when done
     });
+
+  // Run in a separate thread so it does not block the gui.
+  // pool.exec('conciliate', [baseFile, startFromCell, selectedMonth, selectedYear, outDir])
+  //   .then(function (exTime) {
+  //     win.webContents.send('conciliate:end', {
+  //       success: true,
+  //       message: 'Los archivos fueron generados exitosamente.',
+  //       exTime 
+  //     });
+  //   })
+  //   .catch(function (err) {
+  //     win.webContents.send('conciliate:end', {
+  //       success: false,
+  //       message: err.message
+  //     });
+  //   })
+  //   .then(function () {
+  //     pool.terminate(); // terminate all workers when done
+  //   });
 });
