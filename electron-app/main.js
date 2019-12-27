@@ -69,6 +69,7 @@ app.on('activate', () => {
 ipcMain.on('conciliate:start', function(e, args) {
   const {baseFile, startFromCell, selectedMonth, selectedYear, outDir} = args;
 
+  // No child process method
   concil(baseFile, startFromCell, selectedMonth, selectedYear, outDir)
     .then(function (exTime) {
       win.webContents.send('conciliate:end', {

@@ -1,16 +1,20 @@
-var os = require('os');
+const os = require('os');
 
 class ExcelJsService
 {
   constructor(lib) {
     this.lib = lib;
     this.workbook = new lib.Workbook();
+    this.sheetHeaders = null;
   }
 
-  read(filePath, cb) {
-    this.workbook.xlsx.readFile(filePath)
-      .then(() => cb())
-      .catch(err => cb(true));
+  async read(filePath) {
+    try {
+      await this.workbook.xlsx.readFile(filePath);
+      return;
+    } catch (err) {
+      throw new Error(err.message);
+    }
   }
 
   getAllWorksheetNames() {
@@ -19,24 +23,24 @@ class ExcelJsService
 
   getDataset(account, startFromCell) {
     const dataset = [];
-    let headersRow = null;
     const startingRow = +startFromCell.substr(1);
     const worksheet = this.workbook.getWorksheet(account);
     //Iterate over all rows that have values in a worksheet
-    worksheet.eachRow(function(row, rowNumber) {
+    worksheet.eachRow((row, rowNumber) => {
       if (rowNumber < startingRow) { return; }
       // Get Headers
       if (rowNumber === startingRow) {
-        headersRow = row;
+        this.sheetHeaders = row;
         return;
       }
       // Dataset elements
       const data = {};
-      headersRow.eachCell(function(cell, colNumber) {
+      this.sheetHeaders.eachCell((cell, colNumber) => {
         data[cell.value] = row.getCell(colNumber).value;
       });
       dataset.push(data);
     });
+
     return dataset;
   }
 
@@ -56,10 +60,10 @@ class ExcelJsService
     };
   }
 
-  styleHeaderTemplate(worksheet, numberOfHeaders, datasetLength)
+  styleHeaderTemplate(worksheet, datasetLength)
   {
     // Set all Columns width
-    for(let i = 0; i < numberOfHeaders; i++) {
+    for(let i = 0; i < this.sheetHeaders.cellCount; i++) {
       const letter = this.getLetterColumn(i);
       worksheet.getColumn(letter).width = 15;
     }
@@ -73,7 +77,7 @@ class ExcelJsService
 
     // Color row 2,3,4,5,6
     [2, 3, 4, 5, 6].forEach(row => {
-      for(let i = 0; i < numberOfHeaders; i++) {
+      for(let i = 0; i < this.sheetHeaders.cellCount; i++) {
         const cell = worksheet.getCell(`${this.getLetterColumn(i)}${row}`);
         this.styleCell(cell, '00ccff');
         cell.value = '';
@@ -94,7 +98,7 @@ class ExcelJsService
 
 
     // Color header cells
-    for(let i = 0; i < numberOfHeaders; i++) {
+    for(let i = 0; i < this.sheetHeaders.cellCount; i++) {
       const cell = worksheet.getCell(`${this.getLetterColumn(i)}7`);
       this.styleCell(cell, 'FF6699', 'center', 'FFFFFF')
     }
@@ -105,24 +109,21 @@ class ExcelJsService
     // Add worksheet to workbook
     let sheet = workbook.addWorksheet(sheetName);
 
-    // Get headers from one row
-    const firstOb = dataset[0] || {};
-    const headers = Object.keys(firstOb);
-
     // Build default template for all documents
-    this.styleHeaderTemplate(sheet, headers.length, dataset.length);
+    this.styleHeaderTemplate(sheet, dataset.length);
 
     // Print headers
-    for(let i = 0; i < headers.length; i++) {
-      const letter = this.getLetterColumn(i);
-      sheet.getCell(`${letter}7`).value = headers[i];
-    }
+    this.sheetHeaders.eachCell((cell, colNumber) => {
+      const letter = this.getLetterColumn(colNumber-1);
+      sheet.getCell(`${letter}7`).value = cell.value;
+    });
 
     // Print row data
     for (let i = 0; i < dataset.length; i++) {
-      for(let j = 0; j < headers.length; j++) {
+      for(let j = 0; j < this.sheetHeaders.cellCount; j++) {
         const letter = this.getLetterColumn(j);
-        sheet.getCell(`${letter}${i+8}`).value = dataset[i][headers[j]];
+        const prop = this.sheetHeaders.getCell(letter).value;
+        sheet.getCell(`${letter}${i+8}`).value = dataset[i][prop];
       }
     }
 
