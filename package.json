@@ -1,10 +1,13 @@
 {
   "name": "concil-xls-app",
+  "productName": "Conciliador Cargo Abono",
   "version": "1.0.0",
   "description": "",
   "main": "electron-app/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "package-win": "electron-packager . electron-tutorial-app --overwrite --asar=true --platform=win32 --arch=ia32 --icon=assets/icons/win/icon.ico --prune=true --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=\"Conciliador Cargo Abono\"", 
+    "package-mac": "electron-packager . --overwrite --platform=darwin --arch=x64 --icon=assets/icons/mac/icon.icns --prune=true --out=release-builds"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +26,7 @@
     "concil": "./src/main.js"
   },
   "devDependencies": {
-    "electron": "^7.1.6"
+    "electron": "^7.1.6",
+    "electron-packager": "^14.1.1"
   }
 }
