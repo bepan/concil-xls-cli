@@ -38,7 +38,6 @@ function createMainWindow () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    pool.terminate();
     win = null;
   });
 }
@@ -52,6 +51,7 @@ app.on('ready', createMainWindow)
 app.on('window-all-closed', () => {
   // On macOS it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
+  pool.terminate();
   if (process.platform !== 'darwin') {
     app.quit()
   }
@@ -83,5 +83,8 @@ ipcMain.on('conciliate:start', function(e, args) {
         success: false,
         message: err.message
       });
-    });
+    })
+    // .then(function () {
+    //   pool.terminate(); // terminate all workers when done
+    // });
 });
