@@ -50,8 +50,12 @@ class ExcelJsService
     return alphabet[index];
   }
 
-  styleCell(cell, bgColor='ffffff', align='right', color='000000') {
-    cell.alignment = {horizontal: align};
+  styleCell(cell, bgColor='ffffff', align='right', color='000000', wrap=false) {
+    cell.alignment = {
+      wrapText: wrap,
+      horizontal: align,
+      vertical: 'middle'
+    };
     cell.font = {color: { argb: color }};
     cell.fill = {
       type: 'pattern',
@@ -71,9 +75,9 @@ class ExcelJsService
     // Style and Set first row
     worksheet.mergeCells('A1:J1');
     const firstCell = worksheet.getCell('A1');
-    this.styleCell(firstCell, '00ccff', 'center');
+    this.styleCell(firstCell, '00ccff', 'center', undefined, true);
     firstCell.value = `INVERSIONES ACCIONARIAS LANDUS${os.EOL}Auxiliar${os.EOL}Cta: 2102 Acreedores Diversos${os.EOL}(En Varias Monedas)`;
-
+    worksheet.getRow(1).height = 70;
 
     // Color row 2,3,4,5,6
     [2, 3, 4, 5, 6].forEach(row => {
