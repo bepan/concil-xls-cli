@@ -3,10 +3,10 @@
   "productName": "Conciliador Cargo Abono",
   "version": "1.0.0",
   "description": "",
-  "main": "electron-app/main.js",
+  "main": "./electron-app/main.js",
   "scripts": {
     "start": "electron .",
-    "package-win": "electron-packager . electron-tutorial-app --overwrite --asar=true --platform=win32 --arch=ia32 --icon=assets/icons/win/icon.ico --prune=true --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=\"Conciliador Cargo Abono\"", 
+    "package-win": "electron-packager . --overwrite --asar=false --platform=win32 --arch=ia32 --icon=assets/icons/win/icon.ico --prune=true --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=\"Conciliador Cargo Abono\"",
     "package-mac": "electron-packager . --overwrite --platform=darwin --arch=x64 --icon=assets/icons/mac/icon.icns --prune=true --out=release-builds"
   },
   "keywords": [],
@@ -14,13 +14,11 @@
   "license": "ISC",
   "dependencies": {
     "bootstrap": "^4.4.1",
-    "concat-stream": "^2.0.0",
     "exceljs": "^3.5.0",
-    "lodash": "^4.17.15",
+    "lodash.groupby": "^4.6.0",
+    "lodash.sortby": "^4.7.0",
     "vue": "^2.6.11",
-    "workerpool": "^5.0.2",
-    "xlsx": "^0.15.3",
-    "yargs": "^13.2.4"
+    "workerpool": "^5.0.2"
   },
   "bin": {
     "concil": "./src/main.js"

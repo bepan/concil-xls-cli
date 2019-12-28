@@ -3,7 +3,7 @@
 const ExcelJS = require('exceljs');
 const { ExcelJsService } = require('./services/excel-js.service');
 const path = require('path');
-const groupBy = require('lodash/groupBy');
+const groupBy = require('lodash.groupby');
 const fs = require('fs');
 const FileNameValidator = require('./validators/file-name.validator');
 const StartFromValidator = require('./validators/start-from.validator');

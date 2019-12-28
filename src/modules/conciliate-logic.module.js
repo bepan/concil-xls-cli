@@ -1,4 +1,4 @@
-const sortBy = require('lodash/sortBy');
+const sortBy = require('lodash.sortby');
 
 module.exports = function(dataBlock) {
 
