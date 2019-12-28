@@ -8,7 +8,7 @@ const fs = require('fs');
 const FileNameValidator = require('./validators/file-name.validator');
 const StartFromValidator = require('./validators/start-from.validator');
 const chargePaymentConcil = require('./modules/conciliate-logic.module');
-// const workerpool = require('workerpool');
+const workerpool = require('workerpool');
 
 async function main(file, startFromCell, month, year, outDir) {
   // Create objects
@@ -19,16 +19,16 @@ async function main(file, startFromCell, month, year, outDir) {
   const startEx = new Date();
 
   // Run Argument Validations
-  // try {
+  try {
     FileNameValidator.run(file);
     StartFromValidator.run(startFromCell);
-  // } 
-  // catch (err) {
-  //   throw new Error(err.message);
-  // }
+  } 
+  catch (err) {
+    throw new Error(err.message);
+  }
 
   // Read Excel file
-  // try {
+  try {
     console.log('start reading file...');
     await excel.read(file);
     console.log('finish reading file...');
@@ -63,25 +63,25 @@ async function main(file, startFromCell, month, year, outDir) {
         excel.jsonToSheet(newWorkbook, pendingRegs, "Pendientes");
         excel.jsonToSheet(newWorkbook, matchesArr, "Eliminados");
         excel.write(newWorkbook, function(err) {
-          // if (err) {
-          //   throw new Error('There was a problem creating one file, try again.');
-          // }
+          if (err) {
+            throw new Error('There was a problem creating one file, try again.');
+          }
         });
       }
     }
 
     // Return Execution time
     return (new Date() - startEx);
-  // }
-  // catch (err) {
-  //   throw new Error('There was a problem reading the input file, try again.');
-  // }
+  }
+  catch (err) {
+    throw new Error('There was a problem reading the input file, try again.');
+  }
 }
 
 // create a worker and register public functions
-// workerpool.worker({
-//   conciliate: main
-// });
+workerpool.worker({
+  conciliate: main
+});
 
 module.exports = main;
 

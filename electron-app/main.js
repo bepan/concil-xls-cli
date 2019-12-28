@@ -1,13 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const url = require('url');
 const path = require('path');
-// const workerpool = require('workerpool');
-const concil = require('../src/main');
+const workerpool = require('workerpool');
+// const concil = require('../src/main');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
-// var pool = workerpool.pool(path.join(__dirname, '../src/main.js'));
+const pool = workerpool.pool(path.join(__dirname, '../src/main.js'));
 
 function createMainWindow () {
   // Create the browser window.
@@ -38,8 +38,9 @@ function createMainWindow () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    win = null
-  })
+    pool.terminate();
+    win = null;
+  });
 }
 
 // This method will be called when Electron has finished
@@ -68,9 +69,8 @@ app.on('activate', () => {
 // code. You can also put them in separate files and require them here.
 ipcMain.on('conciliate:start', function(e, args) {
   const {baseFile, startFromCell, selectedMonth, selectedYear, outDir} = args;
-
-  // No child process method
-  concil(baseFile, startFromCell, selectedMonth, selectedYear, outDir)
+  // Run in a separate thread so it does not block the gui.
+  pool.exec('conciliate', [baseFile, startFromCell, selectedMonth, selectedYear, outDir])
     .then(function (exTime) {
       win.webContents.send('conciliate:end', {
         success: true,
@@ -84,23 +84,4 @@ ipcMain.on('conciliate:start', function(e, args) {
         message: err.message
       });
     });
-
-  // Run in a separate thread so it does not block the gui.
-  // pool.exec('conciliate', [baseFile, startFromCell, selectedMonth, selectedYear, outDir])
-  //   .then(function (exTime) {
-  //     win.webContents.send('conciliate:end', {
-  //       success: true,
-  //       message: 'Los archivos fueron generados exitosamente.',
-  //       exTime 
-  //     });
-  //   })
-  //   .catch(function (err) {
-  //     win.webContents.send('conciliate:end', {
-  //       success: false,
-  //       message: err.message
-  //     });
-  //   })
-  //   .then(function () {
-  //     pool.terminate(); // terminate all workers when done
-  //   });
 });
