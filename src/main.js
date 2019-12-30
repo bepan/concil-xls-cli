@@ -6,7 +6,7 @@ const workerpool = require('workerpool');
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
-const pool = workerpool.pool(path.join(__dirname, 'entry.module.js'));
+const pool = workerpool.pool(path.join(__dirname, 'modules/entry.module.js'));
 
 function createMainWindow () {
   // Create the browser window.
@@ -50,6 +50,7 @@ app.on('ready', createMainWindow)
 app.on('window-all-closed', () => {
   // On macOS it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
+  pool.terminate();
   if (process.platform !== 'darwin') {
     app.quit();
   }

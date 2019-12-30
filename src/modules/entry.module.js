@@ -1,13 +1,13 @@
 // const XLSX = require('xlsx');
 // const { SheetJsService } = require('./services/sheet-js.service');
 const ExcelJS = require('exceljs');
-const { ExcelJsService } = require('./services/excel-js.service');
+const { ExcelJsService } = require('../services/excel-js.service');
 const path = require('path');
 const groupBy = require('lodash.groupby');
 const fs = require('fs');
-const FileNameValidator = require('./validators/file-name.validator');
-const StartFromValidator = require('./validators/start-from.validator');
-const chargePaymentConcil = require('./modules/conciliate-logic.module');
+const FileNameValidator = require('../validators/file-name.validator');
+const StartFromValidator = require('../validators/start-from.validator');
+const chargePaymentConcil = require('./conciliate-logic.module');
 const workerpool = require('workerpool');
 
 async function main(file, startFromCell, month, year, outDir) {
