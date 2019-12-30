@@ -64,7 +64,7 @@ class ExcelJsService
     };
   }
 
-  styleHeaderTemplate(worksheet, datasetLength)
+  styleHeaderTemplate(worksheet, datasetLength, currAccount, currAux)
   {
     // Set all Columns width
     for(let i = 0; i < this.sheetHeaders.cellCount; i++) {
@@ -76,7 +76,8 @@ class ExcelJsService
     worksheet.mergeCells('A1:J1');
     const firstCell = worksheet.getCell('A1');
     this.styleCell(firstCell, '00ccff', 'center', undefined, true);
-    firstCell.value = `INVERSIONES ACCIONARIAS LANDUS${os.EOL}Auxiliar${os.EOL}Cta: 2102 Acreedores Diversos${os.EOL}(En Varias Monedas)`;
+    const ctaDesc = currAccount === '2102' ? 'Acreedores Diversos' : 'Deudores Diversos';
+    firstCell.value = `INVERSIONES ACCIONARIAS LANDUS${os.EOL}Auxiliar${os.EOL}Cta: ${currAccount} ${ctaDesc}${os.EOL}(En Varias Monedas)`;
     worksheet.getRow(1).height = 70;
 
     // Color row 2,3,4,5,6
@@ -97,8 +98,9 @@ class ExcelJsService
     worksheet.getCell('H4').value = { formula: 'G4-F4' };
 
     worksheet.getCell('A4').value = 'Cta';
+    worksheet.getCell('A5').value = currAccount;
     worksheet.getCell('B4').value = 'Aux';
-    worksheet.getCell('A5').value = '2102';
+    worksheet.getCell('B5').value = currAux;
 
 
     // Color header cells
@@ -108,13 +110,13 @@ class ExcelJsService
     }
   }
 
-  jsonToSheet(workbook, dataset, sheetName)
+  jsonToSheet(workbook, dataset, sheetName, currAccount, currAux)
   {
     // Add worksheet to workbook
     let sheet = workbook.addWorksheet(sheetName);
 
     // Build default template for all documents
-    this.styleHeaderTemplate(sheet, dataset.length);
+    this.styleHeaderTemplate(sheet, dataset.length, currAccount, currAux);
 
     // Print headers
     this.sheetHeaders.eachCell((cell, colNumber) => {

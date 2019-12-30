@@ -1,89 +1,85 @@
-// const XLSX = require('xlsx');
-// const { SheetJsService } = require('./services/sheet-js.service');
-const ExcelJS = require('exceljs');
-const { ExcelJsService } = require('./services/excel-js.service');
+const { app, BrowserWindow, ipcMain } = require('electron');
+const url = require('url');
 const path = require('path');
-const groupBy = require('lodash.groupby');
-const fs = require('fs');
-const FileNameValidator = require('./validators/file-name.validator');
-const StartFromValidator = require('./validators/start-from.validator');
-const chargePaymentConcil = require('./modules/conciliate-logic.module');
 const workerpool = require('workerpool');
 
-async function main(file, startFromCell, month, year, outDir) {
-  // Create objects
-  // const excel = new SheetJsService(XLSX);
-  const excel = new ExcelJsService(ExcelJS);
+// Keep a global reference of the window object, if you don't, the window will
+// be closed automatically when the JavaScript object is garbage collected.
+let win;
+const pool = workerpool.pool(path.join(__dirname, 'entry.module.js'));
 
-  // Take start execution time.
-  const startEx = new Date();
-
-  // Run Argument Validations
-  try {
-    FileNameValidator.run(file);
-    StartFromValidator.run(startFromCell);
-  } 
-  catch (err) {
-    throw new Error(err.message);
-  }
-
-  // Read Excel file
-  try {
-    console.log('start reading file...');
-    await excel.read(file);
-    console.log('finish reading file...');
-  
-    // Create output root directory in destination folder
-    const rootDirName = `concil_${month}_${year}__${new Date().getTime()}`;
-    const rootDirFullPath = path.join(outDir, rootDirName);
-    fs.mkdirSync(rootDirFullPath);
-
-    // Loop through all Accounts
-    const sheetNames = excel.getAllWorksheetNames();
-    for (let account of sheetNames)
-    {
-      // Create directory for each account
-      fs.mkdirSync(path.join(rootDirFullPath, account));
-
-      // Group the data rows by Aux
-      const grouped = groupBy(excel.getDataset(account, startFromCell), 'Aux');
-
-      // Loop through all auxiliars
-      for (let aux of Object.keys(grouped))
-      {
-        // Run conciliate routine per aux block
-        const { matchesArr, pendingRegs } = chargePaymentConcil(grouped[aux]);
-
-        // Remove block from memory
-        delete grouped[aux];
-
-        // Create new excel per aux
-        const newFile = path.join(rootDirFullPath, account, `${account}_${aux}_${month}_${year}.xlsx`);
-        var newWorkbook = excel.createNewWorkbook(newFile);
-        excel.jsonToSheet(newWorkbook, pendingRegs, "Pendientes");
-        excel.jsonToSheet(newWorkbook, matchesArr, "Eliminados");
-        excel.write(newWorkbook, function(err) {
-          if (err) {
-            throw new Error('There was a problem creating one file, try again.');
-          }
-        });
-      }
+function createMainWindow () {
+  // Create the browser window.
+  win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      nodeIntegration: true,
+      // devTools: false
     }
+  });
 
-    // Return Execution time
-    return (new Date() - startEx);
-  }
-  catch (err) {
-    throw new Error('There was a problem reading the input file, try again.');
-  }
+  // and load the index.html of the app.
+  win.loadURL(url.format({
+    pathname: path.join(__dirname, 'index.html'),
+    protocol: 'file',
+    slashes: true
+  }));
+
+  // Open the DevTools.
+  // win.webContents.openDevTools()
+
+  // Remove default menu
+  win.removeMenu();
+
+  // Emitted when the window is closed.
+  win.on('closed', () => {
+    // Dereference the window object, usually you would store windows
+    // in an array if your app supports multi windows, this is the time
+    // when you should delete the corresponding element.
+    win = null;
+  });
 }
 
-// create a worker and register public functions
-workerpool.worker({
-  conciliate: main
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.on('ready', createMainWindow)
+
+// Quit when all windows are closed.
+app.on('window-all-closed', () => {
+  // On macOS it is common for applications and their menu bar
+  // to stay active until the user quits explicitly with Cmd + Q
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+})
+
+app.on('activate', () => {
+  // On macOS it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  if (win === null) {
+    createMainWindow();
+  }
+})
+
+// In this file you can include the rest of your app's specific main process
+// code. You can also put them in separate files and require them here.
+ipcMain.on('conciliate:start', function(e, args) {
+  const {baseFile, startFromCell, selectedMonth, selectedYear, outDir} = args;
+  // Run in a separate thread so it does not block the gui.
+  pool.exec('conciliate', [baseFile, startFromCell, selectedMonth, selectedYear, outDir])
+    .then(function (exTime) {
+      win.webContents.send('conciliate:end', {
+        success: true,
+        message: 'Los archivos fueron generados exitosamente.',
+        exTime 
+      });
+    })
+    .catch(function (err) {
+      win.webContents.send('conciliate:end', {
+        success: false,
+        message: err.message
+      });
+    });
 });
-
-module.exports = main;
-
-
-

@@ -3,7 +3,7 @@
   "productName": "Conciliador Cargo Abono",
   "version": "1.0.0",
   "description": "",
-  "main": "./electron-app/main.js",
+  "main": "./src/main.js",
   "scripts": {
     "start": "electron .",
     "package-win": "electron-packager . --overwrite --platform=win32 --arch=x64 --icon=assets/icons/win/icon.ico --prune=true --out=release-builds",
@@ -19,9 +19,6 @@
     "lodash.sortby": "^4.7.0",
     "vue": "^2.6.11",
     "workerpool": "^5.0.2"
-  },
-  "bin": {
-    "concil": "./src/main.js"
   },
   "devDependencies": {
     "electron": "^7.1.6",
