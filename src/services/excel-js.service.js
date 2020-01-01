@@ -47,7 +47,6 @@ class ExcelJsService
       
       // End reading all file
       workBookReader.on('end', function() {
-        console.log(sheets);
         resolve(sheets);
       });
 
