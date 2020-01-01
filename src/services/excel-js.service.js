@@ -1,47 +1,59 @@
 const os = require('os');
+const XlsxStreamReader = require("xlsx-stream-reader");
+const fs = require('fs');
 
 class ExcelJsService
 {
   constructor(lib) {
     this.lib = lib;
     this.workbook = new lib.Workbook();
-    this.sheetHeaders = null;
+    this.sheetHeaders = [];
   }
 
-  async read(filePath) {
-    try {
-      await this.workbook.xlsx.readFile(filePath);
-      return;
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  }
+  read(filePath, startFromCell) {
+    return new Promise((resolve, reject) => {
+      const startingRow = +startFromCell.substr(1);
+      let sheets = {}, sheetRows = [];
+      let workBookReader = new XlsxStreamReader();
+      workBookReader.on('error', error => reject(error));
+      workBookReader.on('worksheet', (workSheetReader) =>
+      {
+        workSheetReader.on('row', (row) => {
+          if (row.attributes.r < startingRow) { return; }
+          if (row.attributes.r === startingRow) {
+            this.sheetHeaders = row.values;
+            return;
+          }
+          let rowObj = {};
+          row.values.forEach((rowVal, colNum) => {
+            // do something with row values
+            const header = this.sheetHeaders[colNum];
+            if (['CargoCG', 'AbonoCG'].includes(header)) {
+              rowObj[header] = +rowVal.replace(/[,-]/g, '').trim();
+              return;
+            }
+            rowObj[header] = rowVal;
+          });
+          sheetRows.push(rowObj);
+        });
 
-  getAllWorksheetNames() {
-    return this.workbook.worksheets.map(ws => ws.name);
-  }
-
-  getDataset(account, startFromCell) {
-    const dataset = [];
-    const startingRow = +startFromCell.substr(1);
-    const worksheet = this.workbook.getWorksheet(account);
-    //Iterate over all rows that have values in a worksheet
-    worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber < startingRow) { return; }
-      // Get Headers
-      if (rowNumber === startingRow) {
-        this.sheetHeaders = row;
-        return;
-      }
-      // Dataset elements
-      const data = {};
-      this.sheetHeaders.eachCell((cell, colNumber) => {
-        data[cell.value] = row.getCell(colNumber).value;
+        workSheetReader.on('end', function () {
+          sheets[workSheetReader.name] = sheetRows;
+          sheetRows = [];
+        });
+        // call process after registering handlers
+        workSheetReader.process();
       });
-      dataset.push(data);
-    });
+      
+      // End reading all file
+      workBookReader.on('end', function() {
+        console.log(sheets);
+        resolve(sheets);
+      });
 
-    return dataset;
+      fs.createReadStream(filePath)
+        .pipe(workBookReader);
+    });
   }
 
   getLetterColumn(index)
@@ -67,7 +79,7 @@ class ExcelJsService
   styleHeaderTemplate(worksheet, datasetLength, currAccount, currAux)
   {
     // Set all Columns width
-    for(let i = 0; i < this.sheetHeaders.cellCount; i++) {
+    for(let i = 0; i < this.sheetHeaders.length - 1; i++) {
       const letter = this.getLetterColumn(i);
       worksheet.getColumn(letter).width = 15;
     }
@@ -82,7 +94,7 @@ class ExcelJsService
 
     // Color row 2,3,4,5,6
     [2, 3, 4, 5, 6].forEach(row => {
-      for(let i = 0; i < this.sheetHeaders.cellCount; i++) {
+      for(let i = 0; i < this.sheetHeaders.length - 1; i++) {
         const cell = worksheet.getCell(`${this.getLetterColumn(i)}${row}`);
         this.styleCell(cell, '00ccff');
         cell.value = '';
@@ -104,7 +116,7 @@ class ExcelJsService
 
 
     // Color header cells
-    for(let i = 0; i < this.sheetHeaders.cellCount; i++) {
+    for(let i = 0; i < this.sheetHeaders.length - 1; i++) {
       const cell = worksheet.getCell(`${this.getLetterColumn(i)}7`);
       this.styleCell(cell, 'FF6699', 'center', 'FFFFFF')
     }
@@ -119,16 +131,17 @@ class ExcelJsService
     this.styleHeaderTemplate(sheet, dataset.length, currAccount, currAux);
 
     // Print headers
-    this.sheetHeaders.eachCell((cell, colNumber) => {
+    this.sheetHeaders.forEach((value, colNumber) => {
+      if (colNumber === 0) { return; }
       const letter = this.getLetterColumn(colNumber-1);
-      sheet.getCell(`${letter}7`).value = cell.value;
+      sheet.getCell(`${letter}7`).value = value;
     });
 
     // Print row data
     for (let i = 0; i < dataset.length; i++) {
-      for(let j = 0; j < this.sheetHeaders.cellCount; j++) {
+      for(let j = 0; j < this.sheetHeaders.length - 1; j++) {
         const letter = this.getLetterColumn(j);
-        const prop = this.sheetHeaders.getCell(letter).value;
+        const prop = this.sheetHeaders[j+1];
         sheet.getCell(`${letter}${i+8}`).value = dataset[i][prop];
       }
     }

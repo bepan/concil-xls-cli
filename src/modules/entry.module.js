@@ -29,9 +29,7 @@ async function main(file, startFromCell, month, year, outDir) {
 
   // Read Excel file
   try {
-    console.log('start reading file...');
-    await excel.read(file);
-    console.log('finish reading file...');
+    const sheetsData = await excel.read(file, startFromCell);
   
     // Create output root directory in destination folder
     const rootDirName = `concil_${month}_${year}__${new Date().getTime()}`;
@@ -39,14 +37,14 @@ async function main(file, startFromCell, month, year, outDir) {
     fs.mkdirSync(rootDirFullPath);
 
     // Loop through all Accounts
-    const sheetNames = excel.getAllWorksheetNames();
-    for (let account of sheetNames)
+    const accounts = Object.keys(sheetsData);
+    for (let account of accounts)
     {
       // Create directory for each account
       fs.mkdirSync(path.join(rootDirFullPath, account));
 
       // Group the data rows by Aux
-      const grouped = groupBy(excel.getDataset(account, startFromCell), 'Aux');
+      const grouped = groupBy(sheetsData[account], 'Aux');
 
       // Loop through all auxiliars
       for (let aux of Object.keys(grouped))
@@ -83,7 +81,6 @@ workerpool.worker({
   conciliate: main
 });
 
-module.exports = main;
 
 
 
