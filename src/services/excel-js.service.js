@@ -19,8 +19,8 @@ class ExcelJsService
       workBookReader.on('worksheet', (workSheetReader) =>
       {
         workSheetReader.on('row', (row) => {
-          if (row.attributes.r < startingRow) { return; }
-          if (row.attributes.r === startingRow) {
+          if (+row.attributes.r < startingRow) return;
+          if (+row.attributes.r === startingRow) {
             this.sheetHeaders = row.values;
             return;
           }
