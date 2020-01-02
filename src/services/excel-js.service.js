@@ -15,7 +15,11 @@ class ExcelJsService
       const startingRow = +startFromCell.substr(1);
       let sheets = {}, sheetRows = [];
       let workBookReader = new XlsxStreamReader();
-      workBookReader.on('error', error => reject(error));
+      workBookReader.on('error', error => {
+        console.log('error reading!');
+        reject(error);
+        return;
+      });
       workBookReader.on('worksheet', (workSheetReader) =>
       {
         workSheetReader.on('row', (row) => {
@@ -141,6 +145,10 @@ class ExcelJsService
       for(let j = 0; j < this.sheetHeaders.length - 1; j++) {
         const letter = this.getLetterColumn(j);
         const prop = this.sheetHeaders[j+1];
+        if (prop === 'Fecha') {
+          sheet.getCell(`${letter}${i+8}`).value = new Date(dataset[i][prop]);
+          continue;
+        }
         sheet.getCell(`${letter}${i+8}`).value = dataset[i][prop];
       }
     }

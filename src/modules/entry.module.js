@@ -30,6 +30,10 @@ async function main(file, startFromCell, month, year, outDir) {
   // Read Excel file
   try {
     const sheetsData = await excel.read(file, startFromCell);
+    const accounts = Object.keys(sheetsData);
+    if (!accounts.length) {
+      throw new Error('The file extension is not xlsx.');
+    }
   
     // Create output root directory in destination folder
     const rootDirName = `concil_${month}_${year}__${new Date().getTime()}`;
@@ -37,7 +41,6 @@ async function main(file, startFromCell, month, year, outDir) {
     fs.mkdirSync(rootDirFullPath);
 
     // Loop through all Accounts
-    const accounts = Object.keys(sheetsData);
     for (let account of accounts)
     {
       // Create directory for each account
@@ -72,7 +75,7 @@ async function main(file, startFromCell, month, year, outDir) {
     return (new Date() - startEx);
   }
   catch (err) {
-    throw new Error('There was a problem reading the input file, try again.');
+    throw new Error(err.message);
   }
 }
 
