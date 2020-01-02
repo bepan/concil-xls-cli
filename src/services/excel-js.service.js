@@ -16,9 +16,7 @@ class ExcelJsService
       let sheets = {}, sheetRows = [];
       let workBookReader = new XlsxStreamReader();
       workBookReader.on('error', error => {
-        console.log('error reading!');
         reject(error);
-        return;
       });
       workBookReader.on('worksheet', (workSheetReader) =>
       {
@@ -33,7 +31,8 @@ class ExcelJsService
             // do something with row values
             const header = this.sheetHeaders[colNum];
             if (['CargoCG', 'AbonoCG'].includes(header)) {
-              rowObj[header] = +rowVal.replace(/[,-]/g, '').trim();
+              const moneyValue = typeof rowVal === 'string' ? Number(rowVal.replace(/[,-]/g, '').trim()) : rowVal;
+              rowObj[header] = moneyValue;
               return;
             }
             rowObj[header] = rowVal;
