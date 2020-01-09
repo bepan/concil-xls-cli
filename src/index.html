@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <base href="./">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Conciliador</title>
-    <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="./libs/bootstrap.min.css" />
   </head>
   <body>
     <!-- Main app -->
@@ -85,9 +86,9 @@
 
     </div>
 
-    <script type="module">
+    <script src="./libs/vue.min.js"></script>
+    <script>
       const { remote, ipcRenderer } = require('electron');
-      import Vue from '../node_modules/vue/dist/vue.esm.browser.js';
 
       var app = new Vue({
         el: '#app',

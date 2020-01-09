@@ -47,7 +47,7 @@ async function main(file, startFromCell, month, year, outDir) {
       fs.mkdirSync(path.join(rootDirFullPath, account));
 
       // Group the data rows by Aux
-      const grouped = groupBy(sheetsData[account], 'Aux');
+      const grouped = groupBy(sheetsData[account], 'aux');
 
       // Loop through all auxiliars
       for (let aux of Object.keys(grouped))

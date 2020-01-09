@@ -13,30 +13,48 @@ class ExcelJsService
   read(filePath, startFromCell) {
     return new Promise((resolve, reject) => {
       const startingRow = +startFromCell.substr(1);
-      let sheets = {}, sheetRows = [];
+      let sheets = {}, sheetRows = [], skipEverything = false, missingCols = [];
       let workBookReader = new XlsxStreamReader();
       workBookReader.on('error', error => {
         reject(error);
       });
       workBookReader.on('worksheet', (workSheetReader) =>
       {
-        workSheetReader.on('row', (row) => {
+        if (skipEverything){
+          // we only want first sheet
+          workSheetReader.skip();
+          return;
+        }
+        workSheetReader.on('row', row => {
           if (+row.attributes.r < startingRow) return;
           if (+row.attributes.r === startingRow) {
-            this.sheetHeaders = row.values;
+            this.sheetHeaders = row.values
+              .filter(() => true) // Remove empty items (holes)
+              .map(col => col.toLowerCase());
+            
+            if (!this.sheetHeaders.includes('aux')) { missingCols.push('aux') }
+            if (!this.sheetHeaders.includes('concepto')) { missingCols.push('concepto') }
+            if (!this.sheetHeaders.includes('cargocg')) { missingCols.push('cargocg') }
+            if (!this.sheetHeaders.includes('abonocg')) { missingCols.push('abonocg') }
+            if (missingCols.length) {
+              skipEverything = true;
+              workSheetReader.skip();
+            }
             return;
           }
           let rowObj = {};
-          row.values.forEach((rowVal, colNum) => {
-            // do something with row values
-            const header = this.sheetHeaders[colNum];
-            if (['CargoCG', 'AbonoCG'].includes(header)) {
-              const moneyValue = typeof rowVal === 'string' ? Number(rowVal.replace(/[,-]/g, '').trim()) : rowVal;
-              rowObj[header] = moneyValue;
-              return;
-            }
-            rowObj[header] = rowVal;
-          });
+          row.values
+            .filter(() => true)
+            .forEach((rowVal, colNum) => {
+              // do something with row values
+              const header = this.sheetHeaders[colNum];
+              if (['cargocg', 'abonocg'].includes(header)) {
+                const moneyValue = typeof rowVal === 'string' ? Number(rowVal.replace(/[,-]/g, '').trim()) : rowVal;
+                rowObj[header] = moneyValue;
+                return;
+              }
+              rowObj[header] = rowVal;
+            });
           sheetRows.push(rowObj);
         });
 
@@ -50,6 +68,11 @@ class ExcelJsService
       
       // End reading all file
       workBookReader.on('end', function() {
+        // Missing required columns
+        if (missingCols.length) {
+          reject({message: `Hacen falta estas columnas: ${missingCols.join(',')}`});
+          return;
+        }
         resolve(sheets);
       });
 
@@ -81,7 +104,7 @@ class ExcelJsService
   styleHeaderTemplate(worksheet, datasetLength, currAccount, currAux)
   {
     // Set all Columns width
-    for(let i = 0; i < this.sheetHeaders.length - 1; i++) {
+    for(let i = 0; i < this.sheetHeaders.length; i++) {
       const letter = this.getLetterColumn(i);
       worksheet.getColumn(letter).width = 15;
     }
@@ -96,7 +119,7 @@ class ExcelJsService
 
     // Color row 2,3,4,5,6
     [2, 3, 4, 5, 6].forEach(row => {
-      for(let i = 0; i < this.sheetHeaders.length - 1; i++) {
+      for(let i = 0; i < this.sheetHeaders.length; i++) {
         const cell = worksheet.getCell(`${this.getLetterColumn(i)}${row}`);
         this.styleCell(cell, '00ccff');
         cell.value = '';
@@ -118,7 +141,7 @@ class ExcelJsService
 
 
     // Color header cells
-    for(let i = 0; i < this.sheetHeaders.length - 1; i++) {
+    for(let i = 0; i < this.sheetHeaders.length; i++) {
       const cell = worksheet.getCell(`${this.getLetterColumn(i)}7`);
       this.styleCell(cell, 'FF6699', 'center', 'FFFFFF')
     }
@@ -134,17 +157,16 @@ class ExcelJsService
 
     // Print headers
     this.sheetHeaders.forEach((value, colNumber) => {
-      if (colNumber === 0) { return; }
-      const letter = this.getLetterColumn(colNumber-1);
+      const letter = this.getLetterColumn(colNumber);
       sheet.getCell(`${letter}7`).value = value;
     });
 
     // Print row data
     for (let i = 0; i < dataset.length; i++) {
-      for(let j = 0; j < this.sheetHeaders.length - 1; j++) {
+      for(let j = 0; j < this.sheetHeaders.length; j++) {
         const letter = this.getLetterColumn(j);
-        const prop = this.sheetHeaders[j+1];
-        if (prop === 'Fecha') {
+        const prop = this.sheetHeaders[j];
+        if (prop === 'fecha') {
           sheet.getCell(`${letter}${i+8}`).value = new Date(dataset[i][prop]);
           continue;
         }
